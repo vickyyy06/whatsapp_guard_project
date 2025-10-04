@@ -13,6 +13,7 @@ export interface Contact {
   isNew: boolean;
   lastMessage?: string;
   avatar?: string;
+  isGuarded?: boolean;
 }
 
 export interface Message {
@@ -24,40 +25,53 @@ export interface Message {
   fileType?: "image" | "video" | "document";
 }
 
+const initialContacts: Contact[] = [
+  { id: "1", name: "Office Team", type: "group", isNew: false, lastMessage: "Meeting at 3 PM", isGuarded: true },
+  { id: "2", name: "Office Friends", type: "group", isNew: false, lastMessage: "Let's grab lunch" },
+  { id: "3", name: "Mom", type: "individual", isNew: false, lastMessage: "Love you!", isGuarded: false },
+  { id: "4", name: "New Client", type: "individual", isNew: true },
+  { id: "5", name: "Project Team A", type: "group", isNew: false },
+  { id: "6", name: "Dad", type: "individual", isNew: false, lastMessage: "On my way" },
+];
+
 const ChatInterface = () => {
   const { warningsEnabled, warningMode, newContactWarning, groupWarning } = useSettings();
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [showWarning, setShowWarning] = useState(false);
   const [pendingMessage, setPendingMessage] = useState<Message | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [contacts, setContacts] = useState<Contact[]>(initialContacts);
 
-  const contacts: Contact[] = [
-    { id: "1", name: "Office Team", type: "group", isNew: false, lastMessage: "Meeting at 3 PM" },
-    { id: "2", name: "Office Friends", type: "group", isNew: false, lastMessage: "Let's grab lunch" },
-    { id: "3", name: "Mom", type: "individual", isNew: false, lastMessage: "Love you!" },
-    { id: "4", name: "New Client", type: "individual", isNew: true },
-    { id: "5", name: "Project Team A", type: "group", isNew: false },
-    { id: "6", name: "Dad", type: "individual", isNew: false, lastMessage: "On my way" },
-  ];
+  const toggleContactGuard = (contactId: string) => {
+    setContacts(currentContacts =>
+      currentContacts.map(contact =>
+        contact.id === contactId
+          ? { ...contact, isGuarded: contact.isGuarded === undefined ? true : !contact.isGuarded }
+          : contact
+      )
+    );
+  };
 
   const handleSendMessage = (message: Message) => {
     if (!selectedContact) return;
 
-    // Check if warnings are enabled and should be shown
-    if (!warningsEnabled) {
-      confirmSend(message);
-      return;
-    }
-
     let shouldWarn = false;
 
-    if (warningMode === "always") {
-      shouldWarn = true;
-    } else if (warningMode === "smart") {
-      shouldWarn = selectedContact.isNew || selectedContact.type === "group";
-    } else if (warningMode === "custom") {
-      if (newContactWarning && selectedContact.isNew) shouldWarn = true;
-      if (groupWarning && selectedContact.type === "group") shouldWarn = true;
+    // Per-contact setting takes the highest priority.
+    if (typeof selectedContact.isGuarded === 'boolean') {
+      shouldWarn = selectedContact.isGuarded;
+    } else {
+      // Fallback to global settings if per-contact is not explicitly set.
+      if (warningsEnabled) {
+        if (warningMode === "always") {
+          shouldWarn = true;
+        } else if (warningMode === "smart") {
+          shouldWarn = selectedContact.isNew || selectedContact.type === "group";
+        } else if (warningMode === "custom") {
+          if (newContactWarning && selectedContact.isNew) shouldWarn = true;
+          if (groupWarning && selectedContact.type === "group") shouldWarn = true;
+        }
+      }
     }
 
     if (shouldWarn) {
@@ -83,10 +97,11 @@ const ChatInterface = () => {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 h-[calc(100vh-180px)]">
       {/* Contact List */}
       <Card className="lg:col-span-1 p-0 shadow-soft overflow-y-auto bg-card">
-        <ContactList 
-          contacts={contacts} 
+        <ContactList
+          contacts={contacts}
           selectedContact={selectedContact}
           onSelectContact={setSelectedContact}
+          onToggleGuard={toggleContactGuard}
         />
       </Card>
 

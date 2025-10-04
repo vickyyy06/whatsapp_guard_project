@@ -1,14 +1,16 @@
 import { Contact } from "./ChatInterface";
-import { Users, User } from "lucide-react";
+import { Users, User, Shield, ShieldOff } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 interface ContactListProps {
   contacts: Contact[];
   selectedContact: Contact | null;
   onSelectContact: (contact: Contact) => void;
+  onToggleGuard: (contactId: string) => void;
 }
 
-const ContactList = ({ contacts, selectedContact, onSelectContact }: ContactListProps) => {
+const ContactList = ({ contacts, selectedContact, onSelectContact, onToggleGuard }: ContactListProps) => {
   return (
     <div>
       <div className="p-4 border-b border-border bg-muted/30">
@@ -46,8 +48,24 @@ const ContactList = ({ contacts, selectedContact, onSelectContact }: ContactList
                   </p>
                 )}
               </div>
-              <div className="text-xs text-muted-foreground">
-                12:30
+              <div className="flex flex-col items-end gap-1">
+                <span className="text-xs text-muted-foreground">12:30</span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 rounded-full"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleGuard(contact.id);
+                  }}
+                  title={contact.isGuarded ? "Disable Guard" : "Enable Guard"}
+                >
+                  {contact.isGuarded ? (
+                    <Shield className="h-4 w-4 text-primary" />
+                  ) : (
+                    <ShieldOff className="h-4 w-4 text-muted-foreground/60" />
+                  )}
+                </Button>
               </div>
             </div>
           </div>
